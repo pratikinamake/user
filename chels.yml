@@ -1,0 +1,27 @@
+---
+- name: create the user at remote
+  hosts: all
+  vars:
+    users:
+    - username: "gary"
+    - username: "geektechstuff"  
+  tasks:
+   - name: Load password from vault
+     include_vars: user_passwords.yml
+   - name: create user
+     user:
+       name: "{{item.key}}"
+       password: "{{item.value}}"
+       shell: "/bin/bash"
+       generate_ssh_key: yes
+       ssh_key_type: rsa
+       ssh_key_bits: 4096
+       ssh_key_file: ".ssh/id_rsa"
+       ssh_key_passphrase: "{{item.value}}"
+       state: present
+     with_dict: "{{ user_passwords }}" 
+   - name: Deploy SSH Key
+     authorized_key: user="{{item.key}}"
+                     key="{{ lookup('file', '/home/{{item.key}}/.ssh/id_rsa.pub') }}"
+                     state=present
+     with_dict: "{{ user_passwords }}" 
